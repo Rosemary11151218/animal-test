@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>测测你是什么动物人格</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft Yahei",sans-serif}
+body{
+  background:#fff7e8;
+  color:#444;
+  min-height:100vh;
+  padding:20px;
+}
+.container{
+  max-width:600px;
+  margin:30px auto;
+  background:#ffffff;
+  border-radius:20px;
+  padding:30px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.08);
+}
+h1{
+  text-align:center;
+  color:#f28c68;
+  margin-bottom:10px;
+}
+.desc{
+  text-align:center;
+  color:#777;
+  margin-bottom:8px;
+}
+.tip{
+  font-size:12px;
+  color:#aaa;
+  text-align:center;
+  margin-bottom:30px;
+}
+.page{display:none}
+.page.active{display:block}
+.question{
+  font-size:18px;
+  font-weight:500;
+  margin-bottom:20px;
+}
+.opt{
+  border:1px solid #f4d9c8;
+  border-radius:12px;
+  padding:14px 16px;
+  margin-bottom:12px;
+  cursor:pointer;
+  transition:0.25s;
+}
+.opt:hover{
+  background:#ffe9dd;
+  border-color:#f28c68;
+}
+.opt.selected{
+  background:#f28c68;
+  color:white;
+  border-color:#f28c68;
+}
+.btn-wrap{
+  text-align:center;
+  margin-top:30px;
+}
+button{
+  background:#f28c68;
+  color:white;
+  border:none;
+  border-radius:30px;
+  padding:12px 32px;
+  font-size:16px;
+  cursor:pointer;
+}
+button:disabled{
+  background:#ccc;
+  cursor:not-allowed;
+}
+.result-box{
+  text-align:center;
+}
+.animal-name{
+  font-size:32px;
+  color:#f28c68;
+  font-weight:bold;
+  margin:15px 0;
+}
+.animal-desc{
+  line-height:1.7;
+  color:#555;
+}
+.progress{
+  height:6px;
+  background:#eee;
+  border-radius:99px;
+  margin-bottom:25px;
+  overflow:hidden;
+}
+.progress>div{
+  height:100%;
+  background:#f28c68;
+  width:0%;
+  transition:0.3s;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div id="start" class="page active">
+    <h1>🐾 动物人格小测试</h1>
+    <p class="desc">凭第一直觉选择答案，看看你的灵魂是什么小动物～</p>
+    <p class="tip">提示：本测试仅收集答题结果用于趣味统计，不会收集任何个人隐私</p>
+    <div class="btn-wrap">
+      <button onclick="startTest()">开始测试</button>
+    </div>
+  </div>
+
+  <div id="quiz" class="page">
+    <div class="progress"><div id="bar"></div></div>
+    <div id="q-text" class="question"></div>
+    <div id="opts"></div>
+    <div class="btn-wrap">
+      <button id="nextBtn" onclick="next()" disabled>下一题</button>
+    </div>
+  </div>
+
+  <div id="result" class="page">
+    <div class="result-box">
+      <h2>你的灵魂动物是</h2>
+      <div class="animal-name" id="resName"></div>
+      <div class="animal-desc" id="resDesc"></div>
+      <div class="btn-wrap" style="margin-top:35px">
+        <button onclick="restart()">重新测一遍</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============后面你要填飞书信息，先别动这里============
+const FEISHU_TOKEN = "替换成你的API_TOKEN";
+const FEISHU_URL = "https://open.feishu.cn/open-apis/bitable/v1/apps/替换APP_TOKEN/tables/替换TABLE_ID/records";
+// ===================================================
+
+const questions = [
+  {
+    q:"周末有空，你更想？",
+    options:[
+      {text:"独自宅家躺平充电",score:"cat"},
+      {text:"约朋友出门吃喝玩乐",score:"dog"},
+      {text:"去郊外散步/爬山，亲近自然",score:"deer"},
+      {text:"找点新鲜刺激的事挑战自己",score:"fox"}
+    ]
+  },
+  {
+    q:"遇到烦心事，你通常？",
+    options:[
+      {text:"不想说话，自己慢慢消化",score:"cat"},
+      {text:"找人吐槽，说出来就好了",score:"dog"},
+      {text:"尽量避开冲突，息事宁人",score:"deer"},
+      {text:"冷静分析，想办法解决",score:"fox"}
+    ]
+  },
+  {
+    q:"别人对你的评价更接近？",
+    options:[
+      {text:"高冷佛系，不太主动",score:"cat"},
+      {text:"热情随和，很好相处",score:"dog"},
+      {text:"温柔安静，有点腼腆",score:"deer"},
+      {text:"聪明机敏，脑洞大",score:"fox"}
+    ]
+  },
+  {
+    q:"做决定的时候，你偏向？",
+    options:[
+      {text:"随缘，看心情",score:"cat"},
+      {text:"参考朋友的意见",score:"dog"},
+      {text:"谨慎犹豫，怕选错",score:"deer"},
+      {text:"快速判断，敢赌一把",score:"fox"}
+    ]
+  },
+  {
+    q:"社交过后你的感受是？",
+    options:[
+      {text:"好累，需要独处回血",score:"cat"},
+      {text:"很开心，越聊越嗨",score:"dog"},
+      {text:"有点紧张，但很享受氛围",score:"deer"},
+      {text:"观察大家，心里默默看戏",score:"fox"}
+    ]
+  },
+  {
+    q:"如果可以拥有一种超能力，你选？",
+    options:[
+      {text:"随时隐身，不被打扰",score:"cat"},
+      {text:"瞬间找到想见的人",score:"dog"},
+      {text:"和小动物对话",score:"deer"},
+      {text:"一眼看透别人心思",score:"fox"}
+    ]
+  }
+]
+
+const resultMap = {
+  cat:{name:"🐱 猫咪",desc:"独立又慵懒，享受自己的小世界。不刻意讨好谁，高兴时黏人，心情不好就躲开，外表淡淡的，内心柔软敏感。"},
+  dog:{name:"🐶 小狗",desc:"温暖真诚，热爱陪伴。你很重感情，愿意信任别人，乐观开朗，朋友很多，是大家身边的小太阳。"},
+  deer:{name:"🦌 小鹿",desc:"温柔内敛，心地善良。你不爱争抢，共情力很强，容易体谅别人，自带一种干净治愈的气质。"},
+  fox:{name:"🦊 狐狸",desc:"聪慧通透，洞察力强。你思维灵活，看得很明白，不爱凑热闹，做事有自己的节奏，神秘又迷人。"}
+}
+
+let current = 0
+let score = {cat:0,dog:0,deer:0,fox:0}
+let selected = null
+let maxKey = "";
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+  document.getElementById(id).classList.add('active')
+}
+
+function startTest(){
+  current=0
+  score={cat:0,dog:0,deer:0,fox:0}
+  renderQ()
+  showPage('quiz')
+}
+
+function renderQ(){
+  selected=null
+  const q = questions[current]
+  document.getElementById('q-text').innerText = q.q
+  const optWrap = document.getElementById('opts')
+  optWrap.innerHTML=''
+  q.options.forEach((o,i)=>{
+    const div = document.createElement('div')
+    div.className='opt'
+    div.innerText = o.text
+    div.onclick=()=>{
+      document.querySelectorAll('.opt').forEach(x=>x.classList.remove('selected'))
+      div.classList.add('selected')
+      selected = o.score
+      document.getElementById('nextBtn').disabled=false
+    }
+    optWrap.appendChild(div)
+  })
+  const pct = ((current+1)/questions.length)*100
+  document.getElementById('bar').style.width = pct+'%'
+  document.getElementById('nextBtn').disabled=true
+}
+
+function next(){
+  score[selected]++
+  current++
+  if(current >= questions.length){
+    showResult()
+    return
+  }
+  renderQ()
+}
+
+async function uploadResult(){
+  const now = new Date().toLocaleString();
+  const resName = resultMap[maxKey].name;
+  const bodyData = {
+    fields:{
+      "提交时间": now,
+      "猫得分": score.cat,
+      "狗得分": score.dog,
+      "鹿得分": score.deer,
+      "狐狸得分": score.fox,
+      "最终动物": resName
+    }
+  }
+  try{
+    await fetch(FEISHU_URL,{
+      method:"POST",
+      headers:{
+        "Authorization":"Bearer "+FEISHU_TOKEN,
+        "Content-Type":"application/json"
+      },
+      body:JSON.stringify(bodyData)
+    })
+  }catch(e){
+    console.log("上传失败：",e)
+  }
+}
+
+function showResult(){
+  maxKey = Object.keys(score).reduce((a,b)=>score[a]>score[b]?a:b)
+  const r = resultMap[maxKey]
+  document.getElementById('resName').innerText = r.name
+  document.getElementById('resDesc').innerText = r.desc
+  uploadResult();
+  showPage('result')
+}
+
+function restart(){
+  showPage('start')
+}
+</script>
+</body>
+</html>
