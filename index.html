@@ -57,7 +57,7 @@ h1{
 }
 .opt.selected{
   background:#f28c68;
-  color:white;
+  color:#fff;
   border-color:#f28c68;
 }
 .btn-wrap{
@@ -66,7 +66,7 @@ h1{
 }
 button{
   background:#f28c68;
-  color:white;
+  color:#fff;
   border:none;
   border-radius:30px;
   padding:12px 32px;
@@ -74,7 +74,7 @@ button{
   cursor:pointer;
 }
 button:disabled{
-  background:#ccc;
+  background:#cccccc;
   cursor:not-allowed;
 }
 .result-box{
@@ -107,24 +107,27 @@ button:disabled{
 </head>
 <body>
 <div class="container">
+  <!-- 首页 -->
   <div id="start" class="page active">
     <h1>🐾 动物人格小测试</h1>
-    <p class="desc">凭第一直觉选择答案，看看你的灵魂是什么小动物～</p>
-    <p class="tip">提示：本测试仅收集答题结果用于趣味统计，不会收集任何个人隐私</p>
+    <p class="desc">凭第一直觉选择答案，看看你是什么小动物～</p>
+    <p class="tip">提示：本测试仅收集结果用于趣味统计，不会收集个人隐私</p>
     <div class="btn-wrap">
       <button onclick="startTest()">开始测试</button>
     </div>
   </div>
 
+  <!-- 答题页 -->
   <div id="quiz" class="page">
     <div class="progress"><div id="bar"></div></div>
-    <div id="q-text" class="question"></div>
-    <div id="opts"></div>
+    <div class="question" id="q-text"></div>
+    <div id="opts-box"></div>
     <div class="btn-wrap">
       <button id="nextBtn" onclick="next()" disabled>下一题</button>
     </div>
   </div>
 
+  <!-- 结果页 -->
   <div id="result" class="page">
     <div class="result-box">
       <h2>你的灵魂动物是</h2>
@@ -138,163 +141,162 @@ button:disabled{
 </div>
 
 <script>
-// ============后面你要填飞书信息，先别动这里============
-const FEISHU_TOKEN = "替换成你的API_TOKEN";
-const FEISHU_URL = "https://open.feishu.cn/open-apis/bitable/v1/apps/替换APP_TOKEN/tables/替换TABLE_ID/records";
-// ===================================================
+// 简道云webhook地址
+const WEBHOOK_URL = "https://api.jiandaoyun.com/api/v1/automation/tenant/6ab336413a29a5962f0a3bfd/hooks/6ab3366ab56e6ab3374048697d929737cbfacfca9fde2e16";
 
 const questions = [
   {
     q:"周末有空，你更想？",
-    options:[
-      {text:"独自宅家躺平充电",score:"cat"},
-      {text:"约朋友出门吃喝玩乐",score:"dog"},
-      {text:"去郊外散步/爬山，亲近自然",score:"deer"},
-      {text:"找点新鲜刺激的事挑战自己",score:"fox"}
+    a:[
+      {txt:"自己宅家休息充电",score:{cat:2,dog:0,deer:1,fox:1}},
+      {txt:"约朋友出门吃喝玩乐",score:{cat:0,dog:2,deer:1,fox:1}},
+      {txt:"去郊外散步看风景",score:{cat:1,dog:1,deer:2,fox:0}},
+      {txt:"随便逛逛，发掘新奇小店",score:{cat:1,dog:1,deer:0,fox:2}}
     ]
   },
   {
-    q:"遇到烦心事，你通常？",
-    options:[
-      {text:"不想说话，自己慢慢消化",score:"cat"},
-      {text:"找人吐槽，说出来就好了",score:"dog"},
-      {text:"尽量避开冲突，息事宁人",score:"deer"},
-      {text:"冷静分析，想办法解决",score:"fox"}
+    q:"遇到烦心事，你一般会？",
+    a:[
+      {txt:"安静独处，自己慢慢消化",score:{cat:2,dog:0,deer:1,fox:1}},
+      {txt:"找人倾诉，说出来就舒服了",score:{cat:0,dog:2,deer:1,fox:1}},
+      {txt:"尽量避开冲突，不想争吵",score:{cat:1,dog:1,deer:2,fox:0}},
+      {txt:"冷静分析，想办法解决它",score:{cat:1,dog:1,deer:0,fox:2}}
     ]
   },
   {
     q:"别人对你的评价更接近？",
-    options:[
-      {text:"高冷佛系，不太主动",score:"cat"},
-      {text:"热情随和，很好相处",score:"dog"},
-      {text:"温柔安静，有点腼腆",score:"deer"},
-      {text:"聪明机敏，脑洞大",score:"fox"}
+    a:[
+      {txt:"高冷随性，不爱凑热闹",score:{cat:2,dog:0,deer:1,fox:1}},
+      {txt:"热情开朗，很好打交道",score:{cat:0,dog:2,deer:1,fox:1}},
+      {txt:"温柔体贴，共情力强",score:{cat:1,dog:1,deer:2,fox:0}},
+      {txt:"脑子灵活，很有想法",score:{cat:1,dog:1,deer:0,fox:2}}
     ]
   },
   {
-    q:"做决定的时候，你偏向？",
-    options:[
-      {text:"随缘，看心情",score:"cat"},
-      {text:"参考朋友的意见",score:"dog"},
-      {text:"谨慎犹豫，怕选错",score:"deer"},
-      {text:"快速判断，敢赌一把",score:"fox"}
+    q:"做决定的时候，你通常？",
+    a:[
+      {txt:"看心情，怎么舒服怎么来",score:{cat:2,dog:0,deer:1,fox:1}},
+      {txt:"喜欢参考朋友的意见",score:{cat:0,dog:2,deer:1,fox:1}},
+      {txt:"害怕伤害别人，容易犹豫",score:{cat:1,dog:1,deer:2,fox:0}},
+      {txt:"独立思考，不容易被说服",score:{cat:1,dog:1,deer:0,fox:2}}
     ]
   },
   {
-    q:"社交过后你的感受是？",
-    options:[
-      {text:"好累，需要独处回血",score:"cat"},
-      {text:"很开心，越聊越嗨",score:"dog"},
-      {text:"有点紧张，但很享受氛围",score:"deer"},
-      {text:"观察大家，心里默默看戏",score:"fox"}
+    q:"社交过后，你会觉得？",
+    a:[
+      {txt:"耗尽能量，需要独处回血",score:{cat:2,dog:0,deer:1,fox:1}},
+      {txt:"很开心，越聊越兴奋",score:{cat:0,dog:2,deer:1,fox:1}},
+      {txt:"很温和，但有一点点累",score:{cat:1,dog:1,deer:2,fox:0}},
+      {txt:"在观察大家，心里默默判断",score:{cat:1,dog:1,deer:0,fox:2}}
     ]
   },
   {
-    q:"如果可以拥有一种超能力，你选？",
-    options:[
-      {text:"随时隐身，不被打扰",score:"cat"},
-      {text:"瞬间找到想见的人",score:"dog"},
-      {text:"和小动物对话",score:"deer"},
-      {text:"一眼看透别人心思",score:"fox"}
+    q:"更喜欢下面哪种生活节奏？",
+    a:[
+      {txt:"松弛自由，不受约束",score:{cat:2,dog:0,deer:1,fox:1}},
+      {txt:"热闹温暖，有人陪伴",score:{cat:0,dog:2,deer:1,fox:1}},
+      {txt:"宁静平和，岁月静好",score:{cat:1,dog:1,deer:2,fox:0}},
+      {txt:"充满新鲜感，不断探索",score:{cat:1,dog:1,deer:0,fox:2}}
     ]
   }
-]
+];
 
 const resultMap = {
-  cat:{name:"🐱 猫咪",desc:"独立又慵懒，享受自己的小世界。不刻意讨好谁，高兴时黏人，心情不好就躲开，外表淡淡的，内心柔软敏感。"},
-  dog:{name:"🐶 小狗",desc:"温暖真诚，热爱陪伴。你很重感情，愿意信任别人，乐观开朗，朋友很多，是大家身边的小太阳。"},
-  deer:{name:"🦌 小鹿",desc:"温柔内敛，心地善良。你不爱争抢，共情力很强，容易体谅别人，自带一种干净治愈的气质。"},
-  fox:{name:"🦊 狐狸",desc:"聪慧通透，洞察力强。你思维灵活，看得很明白，不爱凑热闹，做事有自己的节奏，神秘又迷人。"}
-}
+  cat:{name:"🐱 猫咪",desc:"独立又傲娇，热爱自由。不刻意讨好谁，喜欢舒服松弛的状态。可以亲近，但也需要自己的小空间，外冷内热。"},
+  dog:{name:"🐶 小狗",desc:"阳光真诚，热情友善。很看重陪伴，愿意信任别人，情绪直白。和你相处轻松温暖，是大家的开心果。"},
+  deer:{name:"🦌 小鹿",desc:"温柔细腻，共情力超强。心思柔软，习惯照顾别人感受，不喜争吵，自带干净治愈的气质。"},
+  fox:{name:"🦊 狐狸",desc:"聪慧敏锐，想法独特。观察力很强，遇事冷静，不盲从。有自己的主见，自带一点神秘魅力。"}
+};
 
-let current = 0
-let score = {cat:0,dog:0,deer:0,fox:0}
-let selected = null
-let maxKey = "";
+let currentQ = 0;
+let score = {cat:0,dog:0,deer:0,fox:0};
+let selectedIdx = null;
 
 function showPage(id){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
-  document.getElementById(id).classList.add('active')
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
 }
 
 function startTest(){
-  current=0
-  score={cat:0,dog:0,deer:0,fox:0}
-  renderQ()
-  showPage('quiz')
+  currentQ=0;
+  score={cat:0,dog:0,deer:0,fox:0};
+  renderQ();
+  showPage("quiz");
 }
 
 function renderQ(){
-  selected=null
-  const q = questions[current]
-  document.getElementById('q-text').innerText = q.q
-  const optWrap = document.getElementById('opts')
-  optWrap.innerHTML=''
-  q.options.forEach((o,i)=>{
-    const div = document.createElement('div')
-    div.className='opt'
-    div.innerText = o.text
+  selectedIdx=null;
+  const q = questions[currentQ];
+  document.getElementById("q-text").innerText = q.q;
+  const box = document.getElementById("opts-box");
+  box.innerHTML="";
+  q.a.forEach((opt,i)=>{
+    const div = document.createElement("div");
+    div.className="opt";
+    div.innerText = opt.txt;
     div.onclick=()=>{
-      document.querySelectorAll('.opt').forEach(x=>x.classList.remove('selected'))
-      div.classList.add('selected')
-      selected = o.score
-      document.getElementById('nextBtn').disabled=false
+      selectedIdx=i;
+      document.querySelectorAll(".opt").forEach(o=>o.classList.remove("selected"));
+      div.classList.add("selected");
+      document.getElementById("nextBtn").disabled=false;
     }
-    optWrap.appendChild(div)
+    box.appendChild(div);
   })
-  const pct = ((current+1)/questions.length)*100
-  document.getElementById('bar').style.width = pct+'%'
-  document.getElementById('nextBtn').disabled=true
+  //进度条
+  const per = ((currentQ+1)/questions.length)*100;
+  document.getElementById("bar").style.width = per+"%";
+  document.getElementById("nextBtn").disabled=true;
 }
 
 function next(){
-  score[selected]++
-  current++
-  if(current >= questions.length){
-    showResult()
-    return
+  const s = questions[currentQ].a[selectedIdx].score;
+  score.cat += s.cat;
+  score.dog += s.dog;
+  score.deer += s.deer;
+  score.fox += s.fox;
+  currentQ++;
+  if(currentQ >= questions.length){
+    showResult();
+    return;
   }
-  renderQ()
+  renderQ();
 }
 
-async function uploadResult(){
+async function showResult(){
+  showPage("result");
+  //找最高分
+  let maxKey = "cat";
+  let maxVal = score.cat;
+  if(score.dog>maxVal){maxVal=score.dog;maxKey="dog"}
+  if(score.deer>maxVal){maxVal=score.deer;maxKey="deer"}
+  if(score.fox>maxVal){maxVal=score.fox;maxKey="fox"}
+  const res = resultMap[maxKey];
+  document.getElementById("resName").innerText = res.name;
+  document.getElementById("resDesc").innerText = res.desc;
+
+  // 提交数据到简道云
   const now = new Date().toLocaleString();
-  const resName = resultMap[maxKey].name;
-  const bodyData = {
-    fields:{
-      "提交时间": now,
-      "猫得分": score.cat,
-      "狗得分": score.dog,
-      "鹿得分": score.deer,
-      "狐狸得分": score.fox,
-      "最终动物": resName
-    }
-  }
+  const postData = {
+    "提交时间": now,
+    "猫得分": score.cat,
+    "狗得分": score.dog,
+    "鹿得分": score.deer,
+    "狐狸得分": score.fox,
+    "最终动物": res.name
+  };
   try{
-    await fetch(FEISHU_URL,{
+    await fetch(WEBHOOK_URL,{
       method:"POST",
-      headers:{
-        "Authorization":"Bearer "+FEISHU_TOKEN,
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify(bodyData)
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(postData)
     })
   }catch(e){
-    console.log("上传失败：",e)
+    console.log("提交日志：",e);
   }
-}
-
-function showResult(){
-  maxKey = Object.keys(score).reduce((a,b)=>score[a]>score[b]?a:b)
-  const r = resultMap[maxKey]
-  document.getElementById('resName').innerText = r.name
-  document.getElementById('resDesc').innerText = r.desc
-  uploadResult();
-  showPage('result')
 }
 
 function restart(){
-  showPage('start')
+  showPage("start");
 }
 </script>
 </body>
